@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Profile</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .profile-box { border: 1px solid #ccc; padding: 20px; margin-bottom: 20px; border-radius: 10px; }
+    .post { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+  </style>
+</head>
+<body>
+  <div class="profile-box">
+    <h2 id="name"></h2>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>Username:</strong> <span id="username"></span></p>
+    <p><strong>Followers:</strong> <span id="followers"></span></p>
+    <p><strong>Following:</strong> <span id="following"></span></p>
+    <button id="followBtn" onclick="toggleFollow()">Follow</button>
+    <a href="index.html">← Back to Feed</a>
+  </div>
+
+  <h3>Posts</h3>
+  <div id="userPosts"></div>
+
+  <script>
+    let currentUser = JSON.parse(localStorage.getItem("user"));
+    const userId = new URLSearchParams(window.location.search).get("id");
+    let viewedUser;
+
+    async function loadProfile() {
+      const res = await fetch(`/api/users/${userId}`);
+      viewedUser = await res.json();
+
+      document.getElementById("name").textContent = viewedUser.fullName;
+      document.getElementById("email").textContent = viewedUser.email;
+      document.getElementById("username").textContent = viewedUser.username;
+      document.getElementById("followers").textContent = viewedUser.followers.length;
+      document.getElementById("following").textContent = viewedUser.following.length;
+
+      if (currentUser._id === viewedUser._id) {
+        document.getElementById("followBtn").style.display = "none";
+      } else {
+        const isFollowing = currentUser.following.includes(viewedUser._id);
+        document.getElementById("followBtn").textContent = isFollowing ? "Unfollow" : "Follow";
+      }
+
+      loadUserPosts();
+    }
+
+    async function toggleFollow() {
+      const isFollowing = currentUser.following.includes(viewedUser._id);
+      const url = `/api/users/${viewedUser._id}/${isFollowing ? 'unfollow' : 'follow'}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser._id })
+      });
+
+      const result = await res.json();
+      alert(result.message);
+
+      // Refresh both users
+      const updatedUser = await fetch(`/api/users/${currentUser._id}`);
+      currentUser = await updatedUser.json();
+      localStorage.setItem("user", JSON.stringify(currentUser));
+      loadProfile();
+    }
+
+    async function loadUserPosts() {
+      const res = await fetch('/api/posts');
+      const allPosts = await res.json();
+      const posts = allPosts.filter(p => p.user._id === viewedUser._id);
+
+      const postDiv = document.getElementById("userPosts");
+      postDiv.innerHTML = '';
+      posts.forEach(post => {
+        postDiv.innerHTML += `
+          <div class="post">
+            <p>${post.content}</p>
+            <p><small>❤️ Likes: ${post.likes.length}</small></p>
+          </div>
+        `;
+      });
+    }
+
+    loadProfile();
+  </script>
+</body>
+</html>

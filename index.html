@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mini Social Media</title>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #eaf0f6;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .post {
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+
+    .post-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+
+    .comment {
+      margin-top: 10px;
+      padding-left: 10px;
+      border-left: 2px solid #ccc;
+    }
+
+    .comment-form,
+    #new-post-form,
+    #login-form,
+    #register-form {
+      margin-top: 10px;
+    }
+
+    input, textarea {
+      padding: 8px;
+      width: 70%;
+      margin-bottom: 5px;
+    }
+
+    button {
+      padding: 6px 12px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .like-btn {
+      background-color: #e91e63;
+      margin-top: 10px;
+    }
+
+    .logged-in {
+      font-weight: bold;
+      margin-top: 10px;
+      color: green;
+    }
+
+    #logout-btn {
+      margin-left: 20px;
+      background-color: #555;
+    }
+
+    .date {
+      font-size: 0.8em;
+      color: #777;
+      margin-left: 10px;
+    }
+
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <h1>📝 Mini Social Media Feed</h1>
+
+  <!-- ✅ Login Form -->
+  <form id="login-form" onsubmit="return loginUser(event)">
+    <h3>🔐 Login</h3>
+    <input type="email" id="login-email" placeholder="Email" required><br>
+    <input type="password" id="login-password" placeholder="Password" required><br>
+    <button type="submit"><i class="fas fa-sign-in-alt"></i> Login</button>
+  </form>
+
+  <!-- ✅ Register Form -->
+  <form id="register-form" onsubmit="return registerUser(event)">
+    <h3>🆕 Register</h3>
+    <input type="text" id="register-fullname" placeholder="Full Name" required><br>
+    <input type="text" id="register-username" placeholder="Username" required><br>
+    <input type="email" id="register-email" placeholder="Email" required><br>
+    <input type="password" id="register-password" placeholder="Password" required><br>
+    <button type="submit"><i class="fas fa-user-plus"></i> Register</button>
+  </form>
+
+  <div class="logged-in" id="logged-user" style="display:none;"></div>
+  <button id="logout-btn" onclick="logoutUser()" style="display:none;"><i class="fas fa-sign-out-alt"></i> Logout</button>
+
+  <!-- ✅ New Post Form -->
+  <form id="new-post-form" onsubmit="return createPost(event)" style="display: none;">
+    <textarea id="new-post-content" placeholder="What's on your mind?" required></textarea><br/>
+    <button type="submit"><i class="fas fa-paper-plane"></i> Post</button>
+  </form>
+
+  <hr>
+
+  <div id="posts-container">Loading posts...</div>
+
+  <script>
+    let currentUser = null;
+
+    function logoutUser() {
+      currentUser = null;
+      document.getElementById('logged-user').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('new-post-form').style.display = 'none';
+      document.getElementById('login-form').style.display = 'block';
+      loadPosts();
+    }
+
+    async function loginUser(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      const res = await fetch('/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (data.user) {
+        currentUser = data.user;
+        document.getElementById('logged-user').textContent = `Logged in as: ${currentUser.fullName} (${currentUser.email})`;
+        document.getElementById('logged-user').style.display = 'block';
+        document.getElementById('logout-btn').style.display = 'inline-block';
+        document.getElementById('new-post-form').style.display = 'block';
+        document.getElementById('login-form').style.display = 'none';
+        loadPosts();
+      } else {
+        alert("Login failed: " + data.error);
+      }
+    }
+
+    async function registerUser(e) {
+      e.preventDefault();
+      const fullName = document.getElementById('register-fullname').value;
+      const username = document.getElementById('register-username').value;
+      const email = document.getElementById('register-email').value;
+      const password = document.getElementById('register-password').value;
+
+      const res = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, username, email, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert('Registration successful! You can now log in.');
+        document.getElementById('register-form').reset();
+      } else {
+        alert('Registration failed: ' + data.error);
+      }
+    }
+
+    async function loadPosts() {
+      try {
+        const res = await fetch('/api/posts');
+        const posts = await res.json();
+        const container = document.getElementById('posts-container');
+        container.innerHTML = '';
+
+        posts.forEach(post => {
+          const postDiv = document.createElement('div');
+          postDiv.className = 'post';
+
+          const commentList = post.comments.map(c => `
+            <div class="comment">
+              <p><strong>${c.user?.fullName || "Unknown"}:</strong> ${c.text}</p>
+            </div>
+          `).join('');
+
+          const likeCount = post.likes.length;
+          const isOwnPost = currentUser && post.user._id === currentUser._id;
+          const isFollowing = currentUser && currentUser.following.includes(post.user._id);
+
+          postDiv.innerHTML = `
+            <div class="post-header">
+              <img src="https://i.pravatar.cc/40?u=${post.user._id}" class="avatar">
+              <div>
+                <a href="#" onclick="viewProfile('${post.user._id}')"><strong>${post.user.fullName}</strong></a>
+                <span class="date">@${post.user.username}</span>
+              </div>
+            </div>
+            <p id="post-content-${post._id}">${post.content}</p>
+            <button class="like-btn" onclick="likePost('${post._id}')">
+              <i class="fas fa-heart"></i> Like (${likeCount})
+            </button>
+            ${isOwnPost ? `
+              <button onclick="editPost('${post._id}')"><i class="fas fa-edit"></i> Edit</button>
+              <button onclick="deletePost('${post._id}')"><i class="fas fa-trash-alt"></i> Delete</button>
+            ` : ''}
+            ${currentUser && !isOwnPost ? `
+              <button onclick="toggleFollow('${post.user._id}', this)">
+                <i class="fas fa-user-${isFollowing ? 'minus' : 'plus'}"></i> ${isFollowing ? 'Unfollow' : 'Follow'}
+              </button>
+            ` : ''}
+            <div><strong>Comments:</strong> ${commentList}</div>
+            ${currentUser ? `
+              <form class="comment-form" onsubmit="return submitComment(event, '${post._id}')">
+                <input type="text" placeholder="Add a comment..." id="input-${post._id}" required />
+                <button type="submit"><i class="fas fa-comment"></i> Comment</button>
+              </form>
+            ` : ''}
+          `;
+
+          container.appendChild(postDiv);
+        });
+      } catch (err) {
+        console.error('❌ Failed to load posts:', err);
+      }
+    }
+
+    async function createPost(e) {
+      e.preventDefault();
+      const content = document.getElementById('new-post-content').value;
+
+      await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser._id, content })
+      });
+
+      document.getElementById('new-post-content').value = '';
+      loadPosts();
+    }
+
+    async function likePost(postId) {
+      if (!currentUser) return alert("Login first to like");
+
+      await fetch(`/api/posts/${postId}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser._id })
+      });
+      loadPosts();
+    }
+
+    async function submitComment(e, postId) {
+      e.preventDefault();
+      const input = document.getElementById(`input-${postId}`);
+      const text = input.value;
+
+      await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: currentUser._id, post: postId, text })
+      });
+
+      input.value = '';
+      loadPosts();
+    }
+
+    async function toggleFollow(targetUserId, btn) {
+      const isFollowing = currentUser.following.includes(targetUserId);
+      const url = `/api/users/${targetUserId}/${isFollowing ? 'unfollow' : 'follow'}`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser._id })
+      });
+
+      const data = await res.json();
+      alert(data.message);
+
+      const updated = await fetch(`/api/users/${currentUser._id}`);
+      currentUser = await updated.json();
+      loadPosts();
+    }
+
+    async function viewProfile(userId) {
+      const res = await fetch(`/api/users/${userId}`);
+      const user = await res.json();
+
+      alert(`👤 Profile Info:\n\nName: ${user.fullName}\nUsername: ${user.username}\nEmail: ${user.email}\nFollowers: ${user.followers.length}\nFollowing: ${user.following.length}`);
+    }
+
+    async function editPost(postId) {
+      const currentContent = document.getElementById(`post-content-${postId}`).innerText;
+      const newContent = prompt("Edit your post:", currentContent);
+      if (!newContent || newContent.trim() === '' || newContent === currentContent) return;
+
+      await fetch(`/api/posts/${postId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newContent })
+      });
+
+      loadPosts();
+    }
+
+    async function deletePost(postId) {
+      const confirmDelete = confirm("Are you sure you want to delete this post?");
+      if (!confirmDelete) return;
+
+      await fetch(`/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      loadPosts();
+    }
+
+    loadPosts();
+  </script>
+</body>
+</html>
