@@ -22,8 +22,8 @@ My name is Iqra Hafeez and i made project named (mini social media app).
 <img width="693" height="232" alt="image" src="https://github.com/user-attachments/assets/ca0d60a2-3103-4cc3-a00a-6eb8cdbec312" />
 <img width="674" height="214" alt="image" src="https://github.com/user-attachments/assets/229ca148-b61d-488b-9ce1-f80522d578af" />
 
-
 -View user profiles 
+
 <img width="678" height="401" alt="image" src="https://github.com/user-attachments/assets/f37a7349-3902-411f-84da-55d9f1280b5f" />
 
 -Edit & Delete own posts  
