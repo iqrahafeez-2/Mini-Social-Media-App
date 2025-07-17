@@ -1,4 +1,4 @@
- Mini Social Media App 📝
+<img width="1421" height="332" alt="image" src="https://github.com/user-attachments/assets/e3f4a19e-9268-4e9e-886d-0abc78fda76b" /> Mini Social Media App 📝
 My name is Iqra Hafeez and i made project named (mini social media app). 
 
 - Frontend: HTML, CSS, JavaScript
