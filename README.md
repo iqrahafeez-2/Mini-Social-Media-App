@@ -1,7 +1,6 @@
-#codealpha_task2
- Mini Social Media App 📝
+Mini Social Media App 📝
  
-My name is Iqra Hafeez and i made project named (mini social media app) for codealpha.
+My name is Iqra Hafeez and i made project named (mini social media app).
 
 - Frontend: HTML, CSS, JavaScript
 - Backend: Node.js, Express.js
